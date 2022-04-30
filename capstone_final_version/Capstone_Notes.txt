@@ -1,0 +1,112 @@
+--Google Analytics Capstone Project--
+This case study was completed using Cyclistic Bike Data (Courtesy of Divy)
+
+1. Objective of the Case Study (Ask)
+To analyse "How do annual members and casual riders use Cyclistic bikes
+differently?" so that casual members can be converted to annual members
+
+2.  Prepare
+The information downloaded and used comes directly from Divvy Bikes website at https://divvy-tripdata.s3.amazonaws.com/index.html
+
+It is for one years worth of data organised by month (April 2020 - April 2021)
+It is assumed to be credible and coming directly from the organisation
+
+3. Process
+After importing the data and doing a quick check through and formatting of each document
+we added two columns "day_of_week" (as a number value) and "ride_length" (in minutes)
+Any data that had unusual values or information that seemed impossible (negative ride length times) was excluded
+
+
+****R Studio Process****
+
+Imported all excel sheets (read_excel)
+
+--Make sure all columns are the same variable type--
+Had to update 2021 sheets station_id (start and end) back to numberic
+
+December_2020 <- mutate(December_2020, start_station_id = as.numeric(start_station_id), end_station_id = as.numeric(end_station_id))
+January_2021 <- mutate(January_2021, start_station_id = as.numeric(start_station_id), end_station_id = as.numeric(end_station_id))
+(continued on from January 2021 to April 2021)
+
+--Bind all sheets into one combined sheet--
+yearly_combined <- bind_rows(April_2020, May_2020, June_2020, July_2020, August_2020, September_2020, October_2020, November_2020, December_2020, January_2021, February_2021, March_2021, April_2021)
+
+--Seperate dates into year/Month/Day--
+yearly_combined$date <- as.Date(yearly_combined$started_at)
+yearly_combined$month <- format(as.Date(yearly_combined$date), "%m") for seperating month
+yearly_combined$day <- format(as.Date(yearly_combined$date), "%d") for seperating day
+yearly_combined$year <- format(as.Date(yearly_combined$date), "%Y") for seperating year (captalized for 4 digit year)
+yearly_combined$day_of_week <- format(as.Date(yearly_combined$date), "%A") changing excel's day of week from a number to a unabbreviated weekday (capital A over lowercase)
+
+--Ride Length adjustment--
+yearly_combined$ride_length <- difftime(yearly_combined$ended_at,yearly_combined$started_at)
+Converting ride length column to an easy to read seconds
+
+
+--Analysis and Interesting Information--
+1563506 casual trips, 2251996 member trips -- table(yearly_combined$member_casual)
+** Mean, Median, Max, Min ride length stats (combined of both member and casual)**
+
+Mean(average) ride length 1657.227 (seconds) -- mean(yearly_combined$ride_length)
+Median ride length 864 (Seconds)
+Max ride length 3523200 (seconds)
+min ride length 0 (seconds)
+
+** Mean, Median, Max, and Min ride length (seperated between Casual/Member)
+aggregate(yearly_combined$ride_length, list(yearly_combined$member_casual), mean)
+aggregate(ride_length ~ member_casual, data = yearly_combined, mean) (same function as above with different syntax)
+Mean(average) for Casual = 2662.075 (seconds) / Mean for Member = 959.586 (seconds)
+Median for Casual = 1257 (seconds) / Median for Member = 683 (seconds)
+Max for Casual = 3341040 (seconds) / Max for Members = 3523200 (seconds)
+Min for both = 0
+
+**Average ride length per day based on Member/Casual (in seconds)**
+First we had to re arrange order yearly_combined$day_of_week <- ordered(yearly_combined$day_of_week, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+Then we aggregated it to find the average based on Member/Casual aggregate(yearly_combined$ride_length ~ yearly_combined$member_casual + yearly_combined$day_of_week, FUN = mean)
+Casual Sunday = 3000.5128
+Member Sunday = 1085.8927
+Casual Monday = 2654.2472
+Member Monday = 915.4361
+Casual Tuesday = 2422.4510
+Member Tuesday = 904.2483
+Casual Wednesday = 2410.0113
+Member Wednesday = 910.4390
+Casual Thursday = 2504.0133
+Member Thursday = 902.7871
+Casual Friday = 2556.9661
+Member Friday = 938.8011
+Casual Saturday = 2770.2544
+Member Saturday = 1062.1050
+
+**Counting the number of rides per day filtered by casual vs member (also arranged in order by weekday)**
+yearly_combined %>%
+     mutate(weekday = wday(started_at, label = TRUE)) %>%
+     group_by(member_casual, weekday) %>%
+     summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>%
+     arrange(member_casual, weekday)
+
+ **Adapting the above to a ggplot graph and altering the Y axis out of scientific notation**
+rides_by_status <- yearly_combined %>%
+     mutate(weekday = wday(started_at, label = TRUE)) %>%
+     group_by(member_casual, weekday) %>%
+     summarise(number_of_rides = n(), average_duration = mean(ride_length)) %>%
+     arrange(member_casual, weekday)
+
+rides_by_status + scale_y_continuous(labels = comma)
+
+**Setting up an export for Average duration based on day and casual/member**
+
+counts <- aggregate(yearly_combined$ride_length ~ yearly_combined$member_casual + yearly_combined$day_of_week, FUN = mean)
+
+**Export for ride length amounts based on month and seperated by casual/member**
+Convert month column to its own dataset and as numeric:
+month_abrev <- as.numeric(yearly_combined$month)
+aggregate(yearly_combined$ride_length ~ yearly_combined$member_casual + month.abb[month_abrev], FUN = mean)
+
+**Export Function**
+write.csv(datasetnamehere, "C:\\Users\\(username)\\Desktop\\Capstone\\name_of_file.csv")
+
+--SHARE--
+Visualizations were made with Rstudio and Tableau
+The Tableau visualizations can be found at the following link
+https://public.tableau.com/app/profile/calebw#!/?newProfile=&activeTab=0
