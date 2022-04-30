@@ -20,7 +20,7 @@ After importing the data and doing a quick check through and formatting of each 
 we added two columns "day_of_week" (as a number value) and "ride_length" (in seconds)
 Any data that had unusual values or information that seemed impossible (negative ride length times) was excluded
 
-4. Analyse Phase
+4. Analyze Phase
 
 Rstudio was used to look into trends and patterns in the data as well as create new columns and better create starting dates to look into trends by day of the week. More in depth notes can be found in the text file located in the folder
 
